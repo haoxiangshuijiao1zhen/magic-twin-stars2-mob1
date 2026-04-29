@@ -255,54 +255,54 @@
         }
         
         .ending-character {
-            width: 70px;
-            height: 90px;
+            width: 50px;
+            height: 65px;
             border-radius: 50%;
-            border: 4px solid;
+            border: 3px solid;
             animation: character-float 3s ease-in-out infinite;
         }
         
         .ending-character:nth-child(1) {
             border-color: #e94560;
-            box-shadow: 0 0 20px rgba(233, 69, 96, 0.5);
+            box-shadow: 0 0 15px rgba(233, 69, 96, 0.5);
             animation-delay: 0s;
-            transform: translateY(10px);
+            transform: translateY(5px);
         }
         
         .ending-character:nth-child(2) {
             border-color: #8b5cf6;
-            box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
             animation-delay: 0.2s;
-            transform: translateY(-20px);
+            transform: translateY(-8px);
         }
         
         .ending-character:nth-child(3) {
             border-color: #00ffff;
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
             animation-delay: 0.4s;
-            transform: translateY(5px);
+            transform: translateY(3px);
         }
         
         @keyframes character-float {
             0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-15px); }
+            50% { transform: translateY(-10px); }
         }
         
         .ending-characters-left {
             position: absolute;
-            bottom: 20%;
-            left: 25%;
+            bottom: 8%;
+            left: 20%;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 20px;
+            gap: 10px;
             z-index: 10;
         }
         
         .ending-characters-right {
             position: absolute;
-            bottom: 20%;
-            right: 25%;
+            bottom: 8%;
+            right: 20%;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -310,17 +310,17 @@
         }
         
         .ending-characters-left .ending-character:nth-child(1) {
-            transform: translateX(-15px) translateY(5px);
+            transform: translateX(-10px) translateY(3px);
         }
         
         .ending-characters-left .ending-character:nth-child(2) {
-            transform: translateX(15px) translateY(-10px);
+            transform: translateX(10px) translateY(-5px);
         }
         
         .ending-characters-right .gaolegao-end {
-            transform: translateY(-5px);
-            width: 90px;
-            height: 110px;
+            transform: translateY(-3px);
+            width: 60px;
+            height: 75px;
         }
         
         .villagers {
