@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>魔法双子星 - Magic Twin Stars</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 65vh;
+            border: 4px solid #e94560;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(233, 69, 96, 0.5), inset 0 0 60px rgba(0,0,0,0.3);
+        }
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: #0a0a15;
+            border-radius: 8px;
+        }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .stat-bar {
+            width: 150px;
+            background: rgba(0,0,0,0.7);
+            border-radius: 10px;
+            padding: 6px 10px;
+            border: 2px solid #533483;
+        }
+        .stat-label {
+            color: #fff;
+            font-size: 10px;
+            margin-bottom: 3px;
+            text-shadow: 0 0 5px #e94560;
+        }
+        .stat-fill {
+            height: 12px;
+            background: linear-gradient(90deg, #e94560, #ff6b6b);
+            border-radius: 6px;
+            transition: width 0.3s;
+            box-shadow: 0 0 10px #e94560;
+        }
+        .level-display {
+            color: #ffd700;
+            font-size: 14px;
+            text-shadow: 0 0 10px #ffd700;
+        }
+        .enemy-count {
+            color: #8b5cf6;
+            font-size: 11px;
+        }
+        #startScreen, #gameOverScreen, #victoryScreen, #endingScreen1, #endingScreen2, #endingScreen3 {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 10, 21, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 8px;
+            z-index: 100;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        #gameOverScreen, #victoryScreen, #endingScreen1, #endingScreen2, #endingScreen3 { display: none; }
+        h1 {
+            font-size: 28px;
+            color: #e94560;
+            text-shadow: 0 0 20px #e94560, 0 0 40px #e94560;
+            margin-bottom: 8px;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        @keyframes glow {
+            from { text-shadow: 0 0 20px #e94560, 0 0 40px #e94560; }
+            to { text-shadow: 0 0 30px #ff6b6b, 0 0 60px #e94560, 0 0 80px #e94560; }
+        }
+        .subtitle { color: #8b5cf6; font-size: 16px; margin-bottom: 15px; text-shadow: 0 0 10px #8b5cf6; }
+        .story { color: #ccc; font-size: 13px; max-width: 90%; text-align: center; line-height: 1.6; margin-bottom: 15px; }
+        .controls { color: #aaa; font-size: 11px; margin-bottom: 15px; text-align: center; line-height: 2; }
+        .controls span { color: #e94560; background: rgba(233, 69, 96, 0.2); padding: 3px 8px; border-radius: 5px; margin: 0 3px; }
+        button {
+            padding: 10px 35px;
+            font-size: 14px;
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(233, 69, 96, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            z-index: 100;
+            margin-top: 15px;
+        }
+        button:hover { transform: scale(1.1); box-shadow: 0 0 40px rgba(233, 69, 96, 0.8); }
+        .score-display { color: #ffd700; font-size: 20px; margin: 10px 0; text-shadow: 0 0 10px #ffd700; }
+        .twin-image {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 4px solid #e94560;
+            margin: 10px;
+            box-shadow: 0 0 20px rgba(233, 69, 96, 0.5);
+        }
+        .unlock-message {
+            color: #00ff88;
+            font-size: 16px;
+            text-shadow: 0 0 15px #00ff88;
+            margin-top: 10px;
+        }
+        .final-unlock {
+            color: #00ffff;
+            font-size: 22px;
+            text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff;
+            animation: rainbow 1s ease-in-out infinite alternate;
+        }
+        @keyframes rainbow {
+            from { filter: hue-rotate(0deg); }
+            to { filter: hue-rotate(360deg); }
+        }
+        
+        .ending-scene {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+        }
+        
+        #endingScreen1 {
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+        
+        #endingScreen2 {
+            background: linear-gradient(180deg, #2d1b4e 0%, #1a1a2e 50%, #0f3460 100%);
+        }
+        
+        #endingScreen3 {
+            background: linear-gradient(180deg, #0f3460 0%, #16213e 50%, #ffffff 100%);
+        }
+        
+        .village-scene {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 40%;
+            z-index: 5;
+        }
+        
+        .cottage {
+            position: absolute;
+            bottom: 0;
+            width: 80px;
+            height: 60px;
+            background: #8b4513;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+        }
+        
+        .cottage-roof {
+            position: absolute;
+            top: -25px;
+            left: -10px;
+            width: 0;
+            height: 0;
+            border-left: 50px solid transparent;
+            border-right: 50px solid transparent;
+            border-bottom: 30px solid #4a2c0a;
+        }
+        
+        .cottage-door {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 25px;
+            height: 35px;
+            background: #5c3317;
+            border-radius: 5px;
+        }
+        
+        .cottage-window {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #ffd700;
+            border-radius: 3px;
+            box-shadow: 0 0 10px #ffd700;
+        }
+        
+        .celebration-confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: confetti-fall 3s linear infinite;
+        }
+        
+        @keyframes confetti-fall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        
+        .light-rays {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 100%;
+            background: radial-gradient(ellipse at top, rgba(255,255,255,0.3) 0%, transparent 70%);
+            animation: light-pulse 3s ease-in-out infinite;
+        }
+        
+        @keyframes light-pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        
+        .ending-characters {
+            position: absolute;
+            bottom: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: flex-end;
+            gap: 15px;
+        }
+        
+        .ending-character {
+            width: 70px;
+            height: 90px;
+            border-radius: 50%;
+            border: 4px solid;
+            animation: character-float 3s ease-in-out infinite;
+        }
+        
+        .ending-character:nth-child(1) {
+            border-color: #e94560;
+            box-shadow: 0 0 20px rgba(233, 69, 96, 0.5);
+            animation-delay: 0s;
+            transform: translateY(10px);
+        }
+        
+        .ending-character:nth-child(2) {
+            border-color: #8b5cf6;
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+            animation-delay: 0.2s;
+            transform: translateY(-20px);
+        }
+        
+        .ending-character:nth-child(3) {
+            border-color: #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            animation-delay: 0.4s;
+            transform: translateY(5px);
+        }
+        
+        @keyframes character-float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        
+        .ending-characters-left {
+            position: absolute;
+            bottom: 20%;
+            left: 25%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            z-index: 10;
+        }
+        
+        .ending-characters-right {
+            position: absolute;
+            bottom: 20%;
+            right: 25%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 10;
+        }
+        
+        .ending-characters-left .ending-character:nth-child(1) {
+            transform: translateX(-15px) translateY(5px);
+        }
+        
+        .ending-characters-left .ending-character:nth-child(2) {
+            transform: translateX(15px) translateY(-10px);
+        }
+        
+        .ending-characters-right .gaolegao-end {
+            transform: translateY(-5px);
+            width: 90px;
+            height: 110px;
+        }
+        
+        .villagers {
+            position: absolute;
+            bottom: 20%;
+            left: 10%;
+            right: 10%;
+            display: flex;
+            justify-content: space-around;
+        }
+        
+        .villager {
+            width: 30px;
+            height: 50px;
+            background: #ffcc80;
+            border-radius: 50% 50% 20% 20%;
+            animation: villager-wave 2s ease-in-out infinite;
+        }
+        
+        @keyframes villager-wave {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-10deg); }
+            75% { transform: rotate(10deg); }
+        }
+        
+        .ending-stars {
+            position: absolute;
+            top: 10%;
+            left: 10%;
+            right: 10%;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+        }
+        
+        .ending-star {
+            width: 20px;
+            height: 20px;
+            background: #ffd700;
+            clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+            animation: star-twinkle 2s ease-in-out infinite;
+        }
+        
+        @keyframes star-twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+        
+        .magic-circle {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border: 3px solid #ffd700;
+            border-radius: 50%;
+            animation: circle-rotate 10s linear infinite;
+        }
+        
+        @keyframes circle-rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .magic-circle::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 250px;
+            height: 250px;
+            border: 2px solid #8b5cf6;
+            border-radius: 50%;
+            animation: circle-rotate 8s linear infinite reverse;
+        }
+        
+        .magic-circle::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border: 1px solid #00ffff;
+            border-radius: 50%;
+            animation: circle-rotate 6s linear infinite;
+        }
+        
+        #mobileControls {
+            position: fixed;
+            bottom: 15px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 15px;
+            pointer-events: auto;
+            z-index: 1000;
+        }
+        
+        .control-group {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .mobile-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(233, 69, 96, 0.6);
+            border: 3px solid #e94560;
+            color: white;
+            font-size: 22px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            box-shadow: 0 0 15px rgba(233, 69, 96, 0.5);
+            transition: transform 0.1s, background 0.1s;
+        }
+        
+        .mobile-btn:active {
+            transform: scale(0.9);
+            background: rgba(233, 69, 96, 0.9);
+        }
+        
+        .mobile-btn.jump {
+            background: rgba(139, 92, 246, 0.6);
+            border-color: #8b5cf6;
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+        }
+        
+        .mobile-btn.jump:active {
+            background: rgba(139, 92, 246, 0.9);
+        }
+        
+        .mobile-btn.attack {
+            background: rgba(255, 215, 0, 0.6);
+            border-color: #ffd700;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+        }
+        
+        .mobile-btn.attack:active {
+            background: rgba(255, 215, 0, 0.9);
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div id="ui">
+            <div class="stat-bar">
+                <div class="stat-label" id="healthLabel">💖 高越 HP</div>
+                <div class="stat-fill" id="health1"></div>
+            </div>
+            <div class="level-display" id="level">关卡 1</div>
+            <div class="stat-bar">
+                <div class="stat-label">⭐ 星星收集 (0/10)</div>
+                <div class="stat-fill" id="stars"></div>
+                <div class="enemy-count" id="enemyCount">👾 击败敌人: 0/30</div>
+            </div>
+        </div>
+        <div id="startScreen">
+            <h1>✨ 魔法双子星 ✨</h1>
+            <div class="subtitle">Magic Twin Stars</div>
+            <img src="高越.PNG" class="twin-image" alt="高越">
+            <div class="story">
+                魔法少女高越踏上了拯救魔法王国的冒险之旅！<br>
+                收集星星，击败黑暗敌人，解锁伙伴一起守护王国！
+            </div>
+            <div class="controls">
+                <span>A/D</span> 移动 | <span>空格</span> 跳跃 | <span>K</span> 攻击
+            </div>
+            <button onclick="startGame()">开始冒险</button>
+        </div>
+        <div id="gameOverScreen">
+            <h1>游戏结束</h1>
+            <div class="score-display">得分: <span id="finalScore">0</span></div>
+            <button onclick="restartGame()">再试一次</button>
+        </div>
+        <div id="victoryScreen">
+            <h1>🎉 关卡完成！🎉</h1>
+            <div class="score-display">得分: <span id="victoryScore">0</span></div>
+            <div class="unlock-message" id="unlockMsg">🌟 解锁新角色：高超！🌟</div>
+            <img id="unlockImage" src="高超.PNG" class="twin-image" alt="高超">
+            <div class="story" id="storyText">
+                恭喜你完成了挑战！<br>
+                高越的哥哥高超出现了，<br>
+                双高胎将一起守护魔法王国！
+            </div>
+            <button onclick="restartGame()">继续冒险</button>
+        </div>
+        <div id="endingScreen1">
+            <div class="ending-stars">
+                <div class="ending-star"></div>
+                <div class="ending-star" style="animation-delay:0.3s;"></div>
+                <div class="ending-star" style="animation-delay:0.6s;"></div>
+                <div class="ending-star" style="animation-delay:0.9s;"></div>
+                <div class="ending-star" style="animation-delay:1.2s;"></div>
+            </div>
+            
+            <div class="village-scene">
+                <div class="cottage" style="left: 15%;">
+                    <div class="cottage-roof"></div>
+                    <div class="cottage-door"></div>
+                    <div class="cottage-window" style="top:15px; left:15px;"></div>
+                </div>
+                <div class="cottage" style="left: 40%;">
+                    <div class="cottage-roof"></div>
+                    <div class="cottage-door"></div>
+                    <div class="cottage-window" style="top:15px; right:15px;"></div>
+                </div>
+                <div class="cottage" style="right: 15%;">
+                    <div class="cottage-roof"></div>
+                    <div class="cottage-door"></div>
+                    <div class="cottage-window" style="top:15px; left:15px;"></div>
+                </div>
+            </div>
+            
+            <h1>🏰 最后篇章 🏰</h1>
+            <div class="subtitle">守护魔法王国</div>
+            <div class="story">
+                高超高越带着高乐高，<br>
+                一起守护着魔法王国的村庄。<br>
+                黑暗势力被彻底击败，<br>
+                和平终于降临！
+            </div>
+            
+            <div class="ending-characters-left">
+                <img src="高越.PNG" class="ending-character" alt="高越">
+                <img src="高超.PNG" class="ending-character" alt="高超">
+            </div>
+            
+            <div class="ending-characters-right">
+                <img src="高乐高.jpg" class="ending-character gaolegao-end" alt="高乐高">
+            </div>
+            
+            <button onclick="showEnding2()">继续</button>
+        </div>
+        
+        <div id="endingScreen2">
+            <div class="ending-stars">
+                <div class="ending-star"></div>
+                <div class="ending-star" style="animation-delay:0.2s;"></div>
+                <div class="ending-star" style="animation-delay:0.4s;"></div>
+                <div class="ending-star" style="animation-delay:0.6s;"></div>
+                <div class="ending-star" style="animation-delay:0.8s;"></div>
+            </div>
+            
+            <div class="celebration-confetti" style="left:10%; background:#ffd700; animation-delay:0s;"></div>
+            <div class="celebration-confetti" style="left:25%; background:#ff6b6b; animation-delay:0.5s;"></div>
+            <div class="celebration-confetti" style="left:40%; background:#8b5cf6; animation-delay:1s;"></div>
+            <div class="celebration-confetti" style="left:55%; background:#00ffff; animation-delay:1.5s;"></div>
+            <div class="celebration-confetti" style="left:70%; background:#ffd700; animation-delay:2s;"></div>
+            <div class="celebration-confetti" style="left:85%; background:#ff6b6b; animation-delay:2.5s;"></div>
+            
+            <div class="villagers">
+                <div class="villager"></div>
+                <div class="villager" style="animation-delay:0.3s;"></div>
+                <div class="villager" style="animation-delay:0.6s;"></div>
+                <div class="villager" style="animation-delay:0.9s;"></div>
+                <div class="villager" style="animation-delay:1.2s;"></div>
+            </div>
+            
+            <h1>🎉 胜利庆典 🎉</h1>
+            <div class="subtitle">村民的感谢</div>
+            <div class="story">
+                村民们纷纷前来祝贺三位英雄！<br>
+                <br>
+                高乐高笑着对高超高越说：<br>
+                <span style="color:#00ffff;">"你们好像真的火了！"</span>
+            </div>
+            
+            <div class="ending-characters-left">
+                <img src="高越.PNG" class="ending-character" alt="高越">
+                <img src="高超.PNG" class="ending-character" alt="高超">
+            </div>
+            
+            <div class="ending-characters-right">
+                <img src="高乐高.jpg" class="ending-character gaolegao-end" alt="高乐高">
+            </div>
+            
+            <button onclick="showEnding3()">继续</button>
+        </div>
+        
+        <div id="endingScreen3">
+            <div class="light-rays"></div>
+            
+            <div class="magic-circle" style="top:50%; left:50%; transform:translate(-50%, -50%);"></div>
+            
+            <div class="ending-stars">
+                <div class="ending-star"></div>
+                <div class="ending-star" style="animation-delay:0.2s;"></div>
+                <div class="ending-star" style="animation-delay:0.4s;"></div>
+                <div class="ending-star" style="animation-delay:0.6s;"></div>
+                <div class="ending-star" style="animation-delay:0.8s;"></div>
+            </div>
+            
+            <h1>✨ 结局 ✨</h1>
+            <div class="subtitle">魔法双子星</div>
+            <div class="story">
+                高超高越带着高乐高，<br>
+                一起走向那束光芒。<br>
+                <br>
+                他们的冒险故事，<br>
+                将永远被魔法王国传颂！
+            </div>
+            
+            <div class="ending-characters-left">
+                <img src="高越.PNG" class="ending-character" alt="高越">
+                <img src="高超.PNG" class="ending-character" alt="高超">
+            </div>
+            
+            <div class="ending-characters-right">
+                <img src="高乐高.jpg" class="ending-character gaolegao-end" alt="高乐高">
+            </div>
+            
+            <div class="final-unlock" style="margin-top:20px;">🎮 游戏结束 🎮</div>
+            <button onclick="backToStart()">重新开始</button>
+        </div>
+    </div>
+    
+    <div id="mobileControls">
+        <div class="control-group">
+            <button class="mobile-btn" id="btnLeft">◀</button>
+            <button class="mobile-btn" id="btnRight">▶</button>
+        </div>
+        <div class="control-group">
+            <button class="mobile-btn jump" id="btnJump">↑</button>
+            <button class="mobile-btn attack" id="btnAttack">⚔</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const W = () => canvas.width;
+        const H = () => canvas.height;
+
+        const starsBg = [];
+        
+        function initStarsBg() {
+            starsBg.length = 0;
+            for (let i = 0; i < 100; i++) {
+                starsBg.push({
+                    x: Math.random() * W(),
+                    y: Math.random() * H(),
+                    size: Math.random() * 2 + 0.5,
+                    twinkle: Math.random() * Math.PI * 2
+                });
+            }
+        }
+        
+        function resizeCanvas() {
+            const container = document.getElementById('gameContainer');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            initStarsBg();
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        let gameState = 'start';
+        let score = 0;
+        let level = 1;
+        let starsCollected = 0;
+        let enemiesKilled = 0;
+        let finalEnemyCount = 0;
+        let particles = [];
+        let enemies = [];
+        let magicAttacks = [];
+        let collectibleStars = [];
+        let hasUnlockedBrother = false;
+        let hasUnlockedGaolegao = false;
+        let starSpawnTimer = 0;
+        let coolEffectActive = false;
+        let coolEffectTimer = 0;
+
+        const images = {
+            gaoyue: new Image(),
+            gaochao: new Image(),
+            gaolegao: new Image(),
+            shoe: new Image()
+        };
+        images.gaoyue.src = '高越.PNG';
+        images.gaochao.src = '高超.PNG';
+        images.gaolegao.src = '高乐高.jpg';
+        images.shoe.src = '鞋子.PNG';
+
+        const player = {
+            x: 100,
+            y: H() - 150,
+            vx: 0,
+            vy: 0,
+            width: 60,
+            height: 80,
+            health: 100,
+            maxHealth: 100,
+            grounded: false,
+            attacking: false,
+            attackTimer: 0,
+            invincible: false,
+            invincibleTimer: 0
+        };
+
+        const brother = {
+            x: -100,
+            y: 0,
+            vx: 0,
+            vy: 0,
+            width: 60,
+            height: 80,
+            active: false,
+            followTarget: player
+        };
+
+        const gaolegao = {
+            x: -100,
+            y: 0,
+            vx: 0,
+            vy: 0,
+            width: 60,
+            height: 80,
+            active: false,
+            followTarget: brother
+        };
+
+        const keys = {};
+        document.addEventListener('keydown', e => { 
+            keys[e.code] = true; 
+            keys[e.key.toLowerCase()] = true;
+        });
+        document.addEventListener('keyup', e => { 
+            keys[e.code] = false; 
+            keys[e.key.toLowerCase()] = false;
+        });
+        
+        const btnLeft = document.getElementById('btnLeft');
+        const btnRight = document.getElementById('btnRight');
+        const btnJump = document.getElementById('btnJump');
+        const btnAttack = document.getElementById('btnAttack');
+
+        function handleTouchStart(key) {
+            keys[key] = true;
+        }
+
+        function handleTouchEnd(key) {
+            keys[key] = false;
+        }
+
+        btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); handleTouchStart('a'); });
+        btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); handleTouchEnd('a'); });
+        btnLeft.addEventListener('mousedown', () => handleTouchStart('a'));
+        btnLeft.addEventListener('mouseup', () => handleTouchEnd('a'));
+
+        btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); handleTouchStart('d'); });
+        btnRight.addEventListener('touchend', (e) => { e.preventDefault(); handleTouchEnd('d'); });
+        btnRight.addEventListener('mousedown', () => handleTouchStart('d'));
+        btnRight.addEventListener('mouseup', () => handleTouchEnd('d'));
+
+        btnJump.addEventListener('touchstart', (e) => { e.preventDefault(); handleTouchStart(' '); });
+        btnJump.addEventListener('touchend', (e) => { e.preventDefault(); handleTouchEnd(' '); });
+        btnJump.addEventListener('mousedown', () => handleTouchStart(' '));
+        btnJump.addEventListener('mouseup', () => handleTouchEnd(' '));
+
+        btnAttack.addEventListener('touchstart', (e) => { e.preventDefault(); handleTouchStart('k'); });
+        btnAttack.addEventListener('touchend', (e) => { e.preventDefault(); handleTouchEnd('k'); });
+        btnAttack.addEventListener('mousedown', () => handleTouchStart('k'));
+        btnAttack.addEventListener('mouseup', () => handleTouchEnd('k'));
+
+        const levels = [
+            { enemies: 10, stars: 10, enemiesNeeded: 30, enemySpeed: 1.5 },
+            { enemies: 20, stars: 20, enemiesNeeded: 60, enemySpeed: 2 },
+            { enemies: 50, stars: 50, enemiesNeeded: 70, enemySpeed: 2.5 }
+        ];
+        let hasCompletedFinalLevel = false;
+
+        function startGame() {
+            document.getElementById('startScreen').style.display = 'none';
+            gameState = 'playing';
+            resetGame();
+        }
+
+        function restartGame() {
+            document.getElementById('gameOverScreen').style.display = 'none';
+            document.getElementById('victoryScreen').style.display = 'none';
+            gameState = 'playing';
+            resetGame();
+        }
+
+        function resetGame() {
+            player.x = 100; player.y = H() - 150;
+            player.health = player.maxHealth;
+            player.invincible = false;
+            brother.x = -100;
+            brother.active = hasUnlockedBrother;
+            gaolegao.x = -100;
+            gaolegao.active = hasUnlockedGaolegao;
+            
+            if (hasUnlockedBrother) {
+                brother.x = 200;
+                brother.y = H() - 150;
+                document.getElementById('healthLabel').textContent = '💖💜 双高胎 HP';
+            }
+            if (hasUnlockedGaolegao) {
+                gaolegao.x = 320;
+                gaolegao.y = H() - 150;
+            }
+
+            score = 0;
+            starsCollected = 0;
+            enemiesKilled = 0;
+            finalEnemyCount = 0;
+            starSpawnTimer = 0;
+            enemies = [];
+            magicAttacks = [];
+            collectibleStars = [];
+            particles = [];
+        }
+
+        function spawnCollectibleStar() {
+            const maxStars = hasUnlockedGaolegao ? 5 : 3;
+            if (collectibleStars.length < maxStars && Math.random() < (hasUnlockedGaolegao ? 0.02 : 0.015)) {
+                collectibleStars.push({
+                    x: Math.random() * (W() - 100) + 50,
+                    y: -30,
+                    vy: 1 + Math.random() * 0.5,
+                    size: 30,
+                    collected: false,
+                    rotation: 0,
+                    rotationSpeed: 0.03 + Math.random() * 0.04
+                });
+            }
+        }
+
+        function spawnEnemy() {
+            const currentLevel = levels[Math.min(level - 1, levels.length - 1)];
+            const maxEnemies = hasUnlockedGaolegao ? 5 : 3;
+            const spawnRate = hasUnlockedGaolegao ? 0.015 : 0.01;
+            
+            if (enemies.length < maxEnemies && Math.random() < spawnRate) {
+                enemies.push({
+                    x: W() + 50,
+                    y: H() - 100 - Math.random() * 50,
+                    vx: -(currentLevel.enemySpeed + Math.random() * 0.5),
+                    width: 45,
+                    height: 55,
+                    health: 30,
+                    maxHealth: 30,
+                    color: '#4a0e4e'
+                });
+            }
+        }
+
+        function updatePlayer(p, isBrother = false, isGaolegao = false) {
+            const speed = isGaolegao ? 3 : (isBrother ? 3.5 : 4.5);
+            const jumpPower = -14;
+            const gravity = 0.5;
+
+            if (!isBrother && !isGaolegao) {
+                if (keys['a']) { p.vx = -speed; }
+                else if (keys['d']) { p.vx = speed; }
+                else { p.vx *= 0.8; }
+
+                if (keys[' '] && p.grounded) {
+                    p.vy = jumpPower;
+                    p.grounded = false;
+                }
+            } else {
+                const target = isGaolegao ? p.followTarget : p.followTarget;
+                const followX = isGaolegao ? target.x - 120 : target.x - 120;
+                const dx = followX - p.x;
+                p.vx = Math.sign(dx) * Math.min(speed, Math.abs(dx));
+                
+                if (target.grounded && !p.grounded) {
+                    p.y = H() - 160;
+                    p.grounded = true;
+                }
+            }
+
+            p.vy += gravity;
+            p.x += p.vx;
+            p.y += p.vy;
+
+            const ground = H() - 80;
+            if (p.y + p.height > ground) {
+                p.y = ground - p.height;
+                p.vy = 0;
+                p.grounded = true;
+            }
+
+            if (p.x < 0) p.x = 0;
+            if (p.x + p.width > W()) p.x = W() - p.width;
+
+            if (!isBrother && !isGaolegao && keys['k'] && !p.attacking) {
+                p.attacking = true;
+                p.attackTimer = 20;
+                
+                magicAttacks.push({
+                        x: p.x + p.width,
+                        y: p.y + p.height / 2 - 15,
+                        vx: hasUnlockedGaolegao ? 7 : 5,
+                        width: hasUnlockedGaolegao ? 60 : 50,
+                        height: hasUnlockedGaolegao ? 45 : 35,
+                        life: 70,
+                        rotation: 0,
+                        isShoe: true,
+                        isPowerful: hasUnlockedGaolegao
+                    });
+
+                const particleCount = hasUnlockedGaolegao ? 20 : 12;
+                for (let i = 0; i < particleCount; i++) {
+                    const speedBoost = hasUnlockedGaolegao ? 2 : 1;
+                    particles.push({
+                        x: p.x + p.width / 2,
+                        y: p.y + p.height / 2,
+                        vx: (Math.random() - 0.5) * 10 * speedBoost + 5 * speedBoost,
+                        vy: (Math.random() - 0.5) * 10 * speedBoost,
+                        life: hasUnlockedGaolegao ? 30 : 20,
+                        maxLife: hasUnlockedGaolegao ? 30 : 20,
+                        color: hasUnlockedGaolegao ? '#00ffff' : '#ffd700',
+                        size: hasUnlockedGaolegao ? 8 : 6
+                    });
+                }
+            }
+
+            if (p.attacking) {
+                p.attackTimer--;
+                if (p.attackTimer <= 0) p.attacking = false;
+            }
+
+            if (p.invincible) {
+                p.invincibleTimer--;
+                if (p.invincibleTimer <= 0) p.invincible = false;
+            }
+        }
+
+        function checkLevelComplete() {
+            const currentLevel = levels[Math.min(level - 1, levels.length - 1)];
+            
+            if (!hasUnlockedBrother && starsCollected >= 10 && enemiesKilled >= 30) {
+                hasUnlockedBrother = true;
+                level = 2;
+                document.getElementById('healthLabel').textContent = '💖💜 双高胎 HP';
+                showVictory('高超', 'gaochao', '恭喜你解锁了s级伙伴\n哥哥高超！');
+            } else if (!hasUnlockedGaolegao && starsCollected >= 20 && enemiesKilled >= 60) {
+                hasUnlockedGaolegao = true;
+                coolEffectActive = true;
+                coolEffectTimer = 300;
+                level = 3;
+                showVictory('高乐高', 'gaolegao', '🎉 恭喜你解锁了隐藏级伙伴高乐高！🎉\n\n现在进入最后篇章！\n收集50颗星星并击败70只怪兽！');
+            } else if (hasUnlockedGaolegao && !hasCompletedFinalLevel && starsCollected >= 50 && finalEnemyCount >= 70) {
+                hasCompletedFinalLevel = true;
+                showEnding1();
+            }
+        }
+
+        function showVictory(name, image, message) {
+            gameState = 'victory';
+            document.getElementById('victoryScore').textContent = score;
+            document.getElementById('unlockMsg').textContent = `🌟 解锁新角色：${name}！🌟`;
+            document.getElementById('unlockImage').src = `${name}.jpg`;
+            document.getElementById('storyText').innerHTML = message;
+            
+            if (name === '高乐高') {
+                document.getElementById('unlockMsg').className = 'final-unlock';
+            } else {
+                document.getElementById('unlockMsg').className = 'unlock-message';
+            }
+            
+            document.getElementById('victoryScreen').style.display = 'flex';
+        }
+
+        function showEnding1() {
+            gameState = 'ending';
+            document.getElementById('victoryScreen').style.display = 'none';
+            document.getElementById('endingScreen1').style.display = 'flex';
+        }
+
+        function showEnding2() {
+            document.getElementById('endingScreen1').style.display = 'none';
+            document.getElementById('endingScreen2').style.display = 'flex';
+        }
+
+        function showEnding3() {
+            document.getElementById('endingScreen2').style.display = 'none';
+            document.getElementById('endingScreen3').style.display = 'flex';
+        }
+
+        function backToStart() {
+            document.getElementById('endingScreen3').style.display = 'none';
+            document.getElementById('startScreen').style.display = 'flex';
+            hasUnlockedBrother = false;
+            hasUnlockedGaolegao = false;
+            hasCompletedFinalLevel = false;
+            level = 1;
+            starsCollected = 0;
+            enemiesKilled = 0;
+            document.getElementById('healthLabel').textContent = '💖 高越 HP';
+        }
+
+        function update() {
+            if (gameState !== 'playing') return;
+
+            score++;
+            starSpawnTimer++;
+
+            updatePlayer(player);
+            if (brother.active) updatePlayer(brother, true);
+            if (gaolegao.active) updatePlayer(gaolegao, false, true);
+
+            spawnEnemy();
+            spawnCollectibleStar();
+
+            if (coolEffectActive) {
+                coolEffectTimer--;
+                if (coolEffectTimer <= 0) coolEffectActive = false;
+            }
+
+            enemies.forEach((enemy, ei) => {
+                enemy.x += enemy.vx;
+
+                if (enemy.x + enemy.width < 0) {
+                    enemies.splice(ei, 1);
+                    return;
+                }
+
+                if (!player.invincible &&
+                    enemy.x < player.x + player.width &&
+                    enemy.x + enemy.width > player.x &&
+                    enemy.y < player.y + player.height &&
+                    enemy.y + enemy.height > player.y) {
+                    player.health -= 8;
+                    player.invincible = true;
+                    player.invincibleTimer = 60;
+                    for (let i = 0; i < 15; i++) {
+                        particles.push({
+                            x: player.x + player.width / 2,
+                            y: player.y + player.height / 2,
+                            vx: (Math.random() - 0.5) * 15,
+                            vy: (Math.random() - 0.5) * 15,
+                            life: 30,
+                            maxLife: 30,
+                            color: '#ff4444',
+                            size: 8
+                        });
+                    }
+                }
+            });
+
+            magicAttacks.forEach((magic, mi) => {
+                magic.x += magic.vx;
+                magic.rotation += hasUnlockedGaolegao ? 0.2 : 0.1;
+                magic.life--;
+
+                enemies.forEach(enemy => {
+                    if (magic.x < enemy.x + enemy.width &&
+                        magic.x + magic.width > enemy.x &&
+                        magic.y < enemy.y + enemy.height &&
+                        magic.y + magic.height > enemy.y) {
+                        enemy.health -= magic.isPowerful ? 50 : 25;
+                        magic.life = 0;
+                        
+                        const particleCount = magic.isPowerful ? 30 : 15;
+                        for (let i = 0; i < particleCount; i++) {
+                            particles.push({
+                                x: enemy.x + enemy.width / 2,
+                                y: enemy.y + enemy.height / 2,
+                                vx: (Math.random() - 0.5) * (magic.isPowerful ? 18 : 12),
+                                vy: (Math.random() - 0.5) * (magic.isPowerful ? 18 : 12),
+                                life: magic.isPowerful ? 40 : 25,
+                                maxLife: magic.isPowerful ? 40 : 25,
+                                color: magic.isPowerful ? '#00ffff' : '#ffd700',
+                                size: magic.isPowerful ? 10 : 6
+                            });
+                        }
+                    }
+                });
+
+                if (magic.life <= 0 || magic.x > W()) magicAttacks.splice(mi, 1);
+            });
+
+            const deadEnemies = enemies.filter(e => e.health <= 0);
+            enemiesKilled += deadEnemies.length;
+            if (hasUnlockedGaolegao) {
+                finalEnemyCount += deadEnemies.length;
+            }
+            enemies = enemies.filter(e => e.health > 0);
+
+            collectibleStars.forEach((star, si) => {
+                star.y += star.vy;
+                star.rotation += star.rotationSpeed;
+                
+                if (star.y > H() + 50) {
+                    collectibleStars.splice(si, 1);
+                    return;
+                }
+
+                if (!star.collected) {
+                    const players = [player];
+                    if (brother.active) players.push(brother);
+                    if (gaolegao.active) players.push(gaolegao);
+
+                    for (const p of players) {
+                        if (star.x - star.size / 2 < p.x + p.width &&
+                            star.x + star.size / 2 > p.x &&
+                            star.y - star.size / 2 < p.y + p.height &&
+                            star.y + star.size / 2 > p.y) {
+                            star.collected = true;
+                            starsCollected++;
+                            score += 100;
+
+                            for (let i = 0; i < 25; i++) {
+                                particles.push({
+                                    x: star.x,
+                                    y: star.y,
+                                    vx: (Math.random() - 0.5) * 8,
+                                    vy: (Math.random() - 0.5) * 8,
+                                    life: 30,
+                                    maxLife: 30,
+                                    color: '#ffd700',
+                                    size: 5
+                                });
+                            }
+
+                            collectibleStars.splice(si, 1);
+                            checkLevelComplete();
+                            break;
+                        }
+                    }
+                }
+            });
+
+            particles.forEach((p, pi) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vx *= 0.95;
+                p.vy *= 0.95;
+                p.life--;
+                if (p.life <= 0) particles.splice(pi, 1);
+            });
+
+            const currentLevel = levels[Math.min(level - 1, levels.length - 1)];
+            const targetStars = hasCompletedFinalLevel ? 50 : (hasUnlockedGaolegao ? 50 : currentLevel.stars);
+            const targetEnemies = hasCompletedFinalLevel ? 70 : (hasUnlockedGaolegao ? 70 : currentLevel.enemiesNeeded);
+            const displayEnemies = hasUnlockedGaolegao ? finalEnemyCount : enemiesKilled;
+            const displayTargetEnemies = hasUnlockedGaolegao ? 70 : targetEnemies;
+
+            document.getElementById('health1').style.width = (player.health / player.maxHealth * 100) + '%';
+            document.getElementById('stars').style.width = Math.min(starsCollected / targetStars * 100, 100) + '%';
+            document.querySelector('.stat-bar:last-child .stat-label').textContent = `⭐ 星星收集 (${starsCollected}/${targetStars})`;
+            document.getElementById('enemyCount').textContent = `👾 击败敌人: ${displayEnemies}/${displayTargetEnemies}`;
+            document.getElementById('level').textContent = hasUnlockedGaolegao ? '🏰 最后篇章' : `关卡 ${level}`;
+
+            if (player.health <= 0) {
+                gameOver();
+            }
+        }
+
+        function gameOver() {
+            gameState = 'gameover';
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('gameOverScreen').style.display = 'flex';
+        }
+
+        function drawCoolEffect() {
+            if (!coolEffectActive) return;
+            
+            const time = Date.now() / 100;
+            for (let i = 0; i < 36; i++) {
+                const angle = (Math.PI * 2 / 36) * i + time * 0.1;
+                const radius = 100 + Math.sin(time * 0.5) * 30;
+                const x = W() / 2 + Math.cos(angle) * radius;
+                const y = H() / 2 + Math.sin(angle) * radius;
+                
+                ctx.save();
+                ctx.globalAlpha = 0.5 + Math.sin(time + i) * 0.3;
+                ctx.fillStyle = `hsl(${(time + i * 10) % 360}, 100%, 50%)`;
+                ctx.shadowColor = `hsl(${(time + i * 10) % 360}, 100%, 50%)`;
+                ctx.shadowBlur = 20;
+                ctx.beginPath();
+                ctx.arc(x, y, 5 + Math.sin(time * 2 + i) * 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function draw() {
+            ctx.fillStyle = '#0a0a15';
+            ctx.fillRect(0, 0, W(), H());
+
+            starsBg.forEach(star => {
+                star.twinkle += 0.05;
+                const brightness = 0.5 + Math.sin(star.twinkle) * 0.5;
+                ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            const groundGradient = ctx.createLinearGradient(0, H() - 80, 0, H());
+            groundGradient.addColorStop(0, '#2d1b4e');
+            groundGradient.addColorStop(1, '#1a1a2e');
+            ctx.fillStyle = groundGradient;
+            ctx.fillRect(0, H() - 80, W(), 80);
+
+            ctx.strokeStyle = '#533483';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, H() - 80);
+            ctx.lineTo(W(), H() - 80);
+            ctx.stroke();
+
+            collectibleStars.forEach(star => {
+                ctx.save();
+                ctx.translate(star.x, star.y);
+                ctx.rotate(star.rotation);
+                
+                ctx.shadowColor = '#ffd700';
+                ctx.shadowBlur = 15;
+                
+                ctx.fillStyle = '#ffd700';
+                ctx.beginPath();
+                for (let i = 0; i < 10; i++) {
+                    const r = i % 2 === 0 ? star.size / 2 : star.size / 4;
+                    const angle = (Math.PI / 5) * i - Math.PI / 2;
+                    const x = Math.cos(angle) * r;
+                    const y = Math.sin(angle) * r;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            });
+
+            magicAttacks.forEach(magic => {
+                ctx.save();
+                ctx.globalAlpha = magic.life / 30;
+                
+                if (magic.isShoe && images.shoe.complete) {
+                    ctx.translate(magic.x + magic.width / 2, magic.y + magic.height / 2);
+                    ctx.rotate(magic.rotation);
+                    ctx.shadowColor = magic.isPowerful ? '#00ffff' : '#ffd700';
+                    ctx.shadowBlur = magic.isPowerful ? 30 : 15;
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.drawImage(images.shoe, -magic.width / 2, -magic.height / 2, magic.width, magic.height);
+                } else {
+                    ctx.fillStyle = magic.isPowerful ? '#00ffff' : '#ffd700';
+                    ctx.beginPath();
+                    ctx.ellipse(magic.x + magic.width / 2, magic.y + magic.height / 2, 
+                               magic.width / 2, magic.height / 2, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            });
+
+            enemies.forEach(enemy => {
+                ctx.save();
+                ctx.shadowColor = enemy.color;
+                ctx.shadowBlur = 15;
+
+                ctx.fillStyle = enemy.color;
+                ctx.beginPath();
+                ctx.ellipse(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 
+                           enemy.width / 2, enemy.height / 2, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#dc2626';
+                ctx.beginPath();
+                ctx.arc(enemy.x + enemy.width * 0.3, enemy.y + enemy.height * 0.4, 5, 0, Math.PI * 2);
+                ctx.arc(enemy.x + enemy.width * 0.7, enemy.y + enemy.height * 0.4, 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#1a1a2e';
+                ctx.beginPath();
+                ctx.arc(enemy.x + enemy.width * 0.3, enemy.y + enemy.height * 0.4, 2, 0, Math.PI * 2);
+                ctx.arc(enemy.x + enemy.width * 0.7, enemy.y + enemy.height * 0.4, 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            });
+
+            particles.forEach(p => {
+                ctx.save();
+                ctx.globalAlpha = p.life / p.maxLife;
+                ctx.fillStyle = p.color;
+                ctx.shadowColor = p.color;
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * (p.life / p.maxLife), 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            ctx.globalCompositeOperation = 'source-over';
+
+            if (images.gaoyue.complete) {
+                ctx.save();
+                ctx.shadowColor = '#ffd700';
+                ctx.shadowBlur = 15;
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.drawImage(images.gaoyue, player.x, player.y, player.width, player.height);
+                ctx.restore();
+            } else {
+                ctx.fillStyle = '#e94560';
+                ctx.fillRect(player.x, player.y, player.width, player.height);
+            }
+
+            if (brother.active && images.gaochao.complete) {
+                ctx.save();
+                ctx.shadowColor = '#8b5cf6';
+                ctx.shadowBlur = 15;
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.drawImage(images.gaochao, brother.x, brother.y, brother.width, brother.height);
+                ctx.restore();
+            }
+
+            if (gaolegao.active && images.gaolegao.complete) {
+                ctx.save();
+                ctx.shadowColor = '#00ffff';
+                ctx.shadowBlur = 20;
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.drawImage(images.gaolegao, gaolegao.x, gaolegao.y, gaolegao.width, gaolegao.height);
+                ctx.restore();
+            }
+
+            drawCoolEffect();
+
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+    </script>
+</body>
+</html>
